@@ -1,0 +1,86 @@
+from flask import Flask, render_template, request, jsonify
+import os
+from transcriptions.transcribe import transcribe_audio
+import json
+from datetime import datetime
+
+
+app = Flask(__name__)
+
+# Ensure the /audio directory exists
+AUDIO_DIR = "audio"
+if not os.path.exists(AUDIO_DIR):
+    os.makedirs(AUDIO_DIR)
+
+TRANSCRIPTIONS_DIR = "transcriptions"
+# Ensure the /transcriptions directory exists
+if not os.path.exists(TRANSCRIPTIONS_DIR):
+    os.makedirs(TRANSCRIPTIONS_DIR)
+
+@app.route("/")
+def home():
+    return render_template("home.html")
+
+@app.route("/record")
+def record():
+    return render_template("record.html")
+
+@app.route("/upload_audio", methods=["POST"])
+def upload_audio():
+    audio_file = request.files.get("audio")
+    note_name = request.form.get("note_name")  # Get the note name from the form
+
+    if not audio_file or not note_name:
+        return jsonify({"message": "Audio file or note name is missing!"}), 400
+
+    # Clean the note name to make it filesystem-safe
+    safe_note_name = "".join(c if c.isalnum() or c in (' ', '-', '_') else "_" for c in note_name).strip()
+    file_path = os.path.join(AUDIO_DIR, f"{safe_note_name}.wav")
+
+    # Save the audio file
+    audio_file.save(file_path)
+
+    return jsonify({"message": "Audio file uploaded successfully!", "file_path": file_path})
+
+@app.route("/transcribe", methods=["POST"])
+def transcribe():
+    data = request.get_json()
+    file_path = data.get("file_path")
+
+    if not file_path or not os.path.exists(file_path):
+        return jsonify({"message": "Invalid file path!"}), 400
+
+    try:
+        # Perform transcription
+        transcription_text = transcribe_audio(file_path)
+        if not transcription_text:
+            return jsonify({"message": "Transcription failed!"}), 500
+
+        # Delete the audio file after transcription
+        os.remove(file_path)
+
+        # Save the transcription to a JSON file
+        note_name = os.path.splitext(os.path.basename(file_path))[0]  # Extract note name from file path
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current timestamp
+        json_data = {
+            "note_name": note_name,
+            "transcription": transcription_text,
+            "date_created": timestamp,
+        }
+
+        # Save JSON to /transcriptions folder
+        json_file_path = os.path.join(TRANSCRIPTIONS_DIR, f"{note_name}.json")
+        with open(json_file_path, "w") as json_file:
+            json.dump(json_data, json_file, indent=4)
+
+        return jsonify({
+            "message": "Transcription successful!",
+            "transcription": transcription_text,
+            "json_file": json_file_path
+        })
+    except Exception as e:
+        print(f"Error during transcription: {e}")
+        return jsonify({"message": "An error occurred during transcription!"}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
