@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import os
-from transcriptions.transcribe import transcribe_audio
+from helper.transcribe import transcribe_audio
 import json
 from datetime import datetime
 import markdown

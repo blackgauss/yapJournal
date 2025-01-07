@@ -1,7 +1,6 @@
 # Private
 transcriptions/
 audio/
-ssl-certificates/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
