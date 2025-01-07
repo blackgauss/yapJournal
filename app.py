@@ -4,6 +4,7 @@ from helper.transcribe import transcribe_audio
 import json
 from datetime import datetime
 import markdown
+import sqlite3
 
 app = Flask(__name__)
 
@@ -36,24 +37,34 @@ def record():
 @app.route("/upload_audio", methods=["POST"])
 def upload_audio():
     audio_file = request.files.get("audio")
-    note_name = request.form.get("note_name", "").strip()  # Get the note name from the form
-    tag = request.form.get("tag", "miscellaneous").strip()  # Get the tag from the form (default: miscellaneous)
+    note_name = request.form.get("note_name", "").strip()
+    tag = request.form.get("tag")
+    if not tag:  # Apply default only if tag is None or empty
+        tag = "miscellaneous"
+    tag = tag.strip()
+    timestamp = datetime.now()
 
     if not audio_file:
         return jsonify({"message": "Audio file is missing!"}), 400
 
     # Generate a dynamic title based on the tag
-    timestamp = datetime.now().strftime("%m-%d-%H%M")
-    title = f"{tag.capitalize()}: {note_name}" if note_name else f"{tag.capitalize()} {timestamp}"
+    title = f"{tag.capitalize()}: {note_name}" if note_name else f"{tag.capitalize()} {timestamp.strftime('%m-%d-%H%M')}"
 
-    # Clean the title to make it filesystem-safe
-    safe_title = "".join(c if c.isalnum() or c in (' ', '-', '_') else "_" for c in title).strip()
-    file_path = os.path.join(AUDIO_DIR, f"{safe_title}.wav")
-
-    # Save the audio file
+    # Save the audio file locally
+    safe_note_name = "".join(c if c.isalnum() or c in (' ', '-', '_') else "_" for c in title).strip()
+    file_path = os.path.join(AUDIO_DIR, f"{safe_note_name}.wav")
     audio_file.save(file_path)
 
-    # Return the file path and metadata
+    # Save metadata to the database
+    conn = sqlite3.connect("journal_entries.db")
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO journal_entries (title, content, tag, additional_info, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (title, "", tag, f"Audio saved at {file_path}", timestamp, timestamp))
+    conn.commit()
+    conn.close()
+
     return jsonify({
         "message": "Audio file uploaded successfully!",
         "file_path": file_path,
@@ -62,12 +73,11 @@ def upload_audio():
     })
 
 
+
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
     data = request.get_json()
     file_path = data.get("file_path")
-    tag = data.get("tag", "miscellaneous")  # Default to miscellaneous if no tag is provided
-
     if not file_path or not os.path.exists(file_path):
         return jsonify({"message": "Invalid file path!"}), 400
 
@@ -80,51 +90,79 @@ def transcribe():
         # Delete the audio file after transcription
         os.remove(file_path)
 
-        # Save the transcription to a JSON file
-        note_name = os.path.splitext(os.path.basename(file_path))[0]  # Extract note name from file path
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current timestamp
-        json_data = {
-            "note_name": note_name,
-            "transcription": transcription_text,
-            "date_created": timestamp,
-            "tag": tag  # Include the tag in the transcription metadata
-        }
-
-        # Save JSON to /transcriptions folder
-        json_file_path = os.path.join(TRANSCRIPTIONS_DIR, f"{note_name}.json")
-        with open(json_file_path, "w") as json_file:
-            json.dump(json_data, json_file, indent=4)
+        # Update the corresponding database entry
+        title = os.path.splitext(os.path.basename(file_path))[0]
+        timestamp = datetime.now()
+        conn = sqlite3.connect("journal_entries.db")
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE journal_entries
+            SET content = ?, updated_at = ?
+            WHERE title = ?
+        ''', (transcription_text, timestamp, title))
+        conn.commit()
+        conn.close()
 
         return jsonify({
             "message": "Transcription successful!",
-            "transcription": transcription_text,
-            "json_file": json_file_path
+            "transcription": transcription_text
         })
     except Exception as e:
         print(f"Error during transcription: {e}")
         return jsonify({"message": "An error occurred during transcription!"}), 500
 
+
 @app.route("/entries", methods=["GET"])
 def entries():
     try:
-        # List all JSON files in the /transcriptions folder
-        entries = []
-        for filename in os.listdir(TRANSCRIPTIONS_DIR):
-            if filename.endswith(".json"):
-                file_path = os.path.join(TRANSCRIPTIONS_DIR, filename)
-                
-                # Read and parse the JSON file
-                with open(file_path, "r") as json_file:
-                    data = json.load(json_file)
-                    entries.append({
-                        "note_name": data.get("note_name", "Unknown"),
-                        "date_created": data.get("date_created", "Unknown"),
-                        "transcription": data.get("transcription", "No transcription available"),
-                        "tag": data.get("tag", "miscellaneous")  # Include the tag for display
-                    })
+        # Get query parameters for filtering and searching
+        tag_filter = request.args.get("tag", "").strip()
+        search_query = request.args.get("search", "").strip()
 
-        # Render the entries page with the entries list
-        return render_template("entries.html", entries=entries)
+        # Connect to the database
+        conn = sqlite3.connect("journal_entries.db")
+        cursor = conn.cursor()
+
+        # Base query
+        sql_query = "SELECT title, content, tag, additional_info, created_at FROM journal_entries"
+        conditions = []
+        params = []
+
+        # Apply tag filter
+        if tag_filter:
+            conditions.append("tag = ?")
+            params.append(tag_filter)
+
+        # Apply search filter (search in title and content)
+        if search_query:
+            conditions.append("(title LIKE ? OR content LIKE ?)")
+            params.append(f"%{search_query}%")
+            params.append(f"%{search_query}%")
+
+        # Add conditions to the query
+        if conditions:
+            sql_query += " WHERE " + " AND ".join(conditions)
+
+        # Order by creation date
+        sql_query += " ORDER BY created_at DESC"
+
+        # Execute the query
+        cursor.execute(sql_query, params)
+        entries = [
+            {
+                "note_name": row[0],
+                "transcription": row[1],
+                "tag": row[2],
+                "additional_info": row[3],
+                "date_created": row[4]
+            }
+            for row in cursor.fetchall()
+        ]
+        conn.close()
+
+        # Render the entries page with the filtered entries
+        return render_template("entries.html", entries=entries, tag_filter=tag_filter, search_query=search_query)
+
     except Exception as e:
         print(f"Error loading entries: {e}")
         return jsonify({"message": "An error occurred while loading entries!"}), 500

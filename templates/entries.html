@@ -4,11 +4,30 @@
 
 {% block content %}
     <h2>All Transcriptions</h2>
+
+    <!-- Filter and Search Form -->
+    <form method="GET" action="/entries" style="margin-bottom: 20px;">
+        <label for="tagFilter">Filter by Tag:</label>
+        <select id="tagFilter" name="tag">
+            <option value="">-- All Tags --</option>
+            <option value="miscellaneous" {% if tag_filter == "miscellaneous" %}selected{% endif %}>Miscellaneous</option>
+            <option value="to-do" {% if tag_filter == "to-do" %}selected{% endif %}>To-Do</option>
+            <option value="yap-dev" {% if tag_filter == "yap-dev" %}selected{% endif %}>yapDev</option>
+        </select>
+
+        <label for="searchQuery">Search:</label>
+        <input type="text" id="searchQuery" name="search" value="{{ search_query }}" placeholder="Enter keywords" />
+
+        <button type="submit">Apply</button>
+    </form>
+
+    <!-- Entries Container -->
     <div id="entries-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
         {% for entry in entries %}
         <div class="entry" style="margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #ddd;">
             <h3>{{ entry.note_name }}</h3>
             <p><strong>Date Created:</strong> {{ entry.date_created }}</p>
+            <p><strong>Tag:</strong> {{ entry.tag }}</p>
             <p><strong>Transcription:</strong></p>
             <p>{{ entry.transcription }}</p>
         </div>
