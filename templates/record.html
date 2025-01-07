@@ -4,8 +4,16 @@
 
 {% block content %}
     <h2>Record Audio</h2>
-    <p>Enter a name for your recording:</p>
+    <p>Enter a name for your recording (or leave blank for default):</p>
     <input type="text" id="noteName" placeholder="Enter note name" />
+    
+    <label for="tag">Select Tag:</label>
+    <select id="tag">
+        <option value="miscellaneous">Miscellaneous</option>
+        <option value="to-do">To-Do</option>
+        <option value="yap-dev">yapDev</option>
+    </select>
+    
     <p>Click the button below to start recording audio.</p>
     <button id="startRecording">Start Recording</button>
     <button id="stopRecording" disabled>Stop Recording</button>
@@ -26,6 +34,7 @@
         const uploadButton = document.getElementById("uploadRecording");
         const transcribeButton = document.getElementById("transcribeRecording");
         const noteNameInput = document.getElementById("noteName");
+        const tagInput = document.getElementById("tag");
         const statusText = document.getElementById("status");
         const audioPlayback = document.getElementById("audioPlayback");
         const transcriptionResult = document.getElementById("transcriptionResult");
@@ -87,18 +96,16 @@
                 return;
             }
 
-            // Get the note name from the input field
+            // Get the note name and tag
             const noteName = noteNameInput.value.trim();
-            if (!noteName) {
-                alert("Please enter a note name before uploading!");
-                return;
-            }
+            const tag = tagInput.value;
 
             // Create a Blob from audio chunks
             const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
             const formData = new FormData();
             formData.append("audio", audioBlob);
             formData.append("note_name", noteName); // Add the note name to the form data
+            formData.append("tag", tag); // Add the tag to the form data
 
             // Upload the audio file to the server
             fetch("/upload_audio", {

@@ -1,6 +1,8 @@
 # Private
 transcriptions/
 audio/
+ssl-certificates/cert.pem
+ssl-certificates/key.pem
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

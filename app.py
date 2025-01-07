@@ -5,7 +5,6 @@ import json
 from datetime import datetime
 import markdown
 
-
 app = Flask(__name__)
 
 # Ensure the /audio directory exists
@@ -30,7 +29,6 @@ def home():
     # Pass the HTML content to the template
     return render_template("home.html", description=html_content)
 
-
 @app.route("/record")
 def record():
     return render_template("record.html")
@@ -38,24 +36,37 @@ def record():
 @app.route("/upload_audio", methods=["POST"])
 def upload_audio():
     audio_file = request.files.get("audio")
-    note_name = request.form.get("note_name")  # Get the note name from the form
+    note_name = request.form.get("note_name", "").strip()  # Get the note name from the form
+    tag = request.form.get("tag", "miscellaneous").strip()  # Get the tag from the form (default: miscellaneous)
 
-    if not audio_file or not note_name:
-        return jsonify({"message": "Audio file or note name is missing!"}), 400
+    if not audio_file:
+        return jsonify({"message": "Audio file is missing!"}), 400
 
-    # Clean the note name to make it filesystem-safe
-    safe_note_name = "".join(c if c.isalnum() or c in (' ', '-', '_') else "_" for c in note_name).strip()
-    file_path = os.path.join(AUDIO_DIR, f"{safe_note_name}.wav")
+    # Generate a dynamic title based on the tag
+    timestamp = datetime.now().strftime("%m-%d-%H%M")
+    title = f"{tag.capitalize()}: {note_name}" if note_name else f"{tag.capitalize()} {timestamp}"
+
+    # Clean the title to make it filesystem-safe
+    safe_title = "".join(c if c.isalnum() or c in (' ', '-', '_') else "_" for c in title).strip()
+    file_path = os.path.join(AUDIO_DIR, f"{safe_title}.wav")
 
     # Save the audio file
     audio_file.save(file_path)
 
-    return jsonify({"message": "Audio file uploaded successfully!", "file_path": file_path})
+    # Return the file path and metadata
+    return jsonify({
+        "message": "Audio file uploaded successfully!",
+        "file_path": file_path,
+        "title": title,
+        "tag": tag
+    })
+
 
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
     data = request.get_json()
     file_path = data.get("file_path")
+    tag = data.get("tag", "miscellaneous")  # Default to miscellaneous if no tag is provided
 
     if not file_path or not os.path.exists(file_path):
         return jsonify({"message": "Invalid file path!"}), 400
@@ -76,6 +87,7 @@ def transcribe():
             "note_name": note_name,
             "transcription": transcription_text,
             "date_created": timestamp,
+            "tag": tag  # Include the tag in the transcription metadata
         }
 
         # Save JSON to /transcriptions folder
@@ -108,6 +120,7 @@ def entries():
                         "note_name": data.get("note_name", "Unknown"),
                         "date_created": data.get("date_created", "Unknown"),
                         "transcription": data.get("transcription", "No transcription available"),
+                        "tag": data.get("tag", "miscellaneous")  # Include the tag for display
                     })
 
         # Render the entries page with the entries list
@@ -118,4 +131,3 @@ def entries():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, ssl_context=("ssl-certificates/cert.pem", "ssl-certificates/key.pem"), debug=True)
-
