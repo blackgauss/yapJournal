@@ -1,13 +1,9 @@
 {% extends "layout.html" %}
 
-{% block title %}Home | Simple Flask App{% endblock %}
+{% block title %}Home{% endblock %}
 
 {% block content %}
-    <h2>Welcome to the Simple Flask App!</h2>
-    <p>Click on the links in the navigation bar to explore the next steps.</p>
-    <p>Here are some things you can do:</p>
-    <ul>
-        <li><a href="/record">record</a></li>
-        <li><a href="/next-step-2">Next Step 2: Placeholder</a></li>
-    </ul>
+    <div class="markdown-content">
+        {{ description|safe }}
+    </div>
 {% endblock %}

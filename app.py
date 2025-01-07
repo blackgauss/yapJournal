@@ -3,6 +3,7 @@ import os
 from transcriptions.transcribe import transcribe_audio
 import json
 from datetime import datetime
+import markdown
 
 
 app = Flask(__name__)
@@ -19,7 +20,16 @@ if not os.path.exists(TRANSCRIPTIONS_DIR):
 
 @app.route("/")
 def home():
-    return render_template("home.html")
+    # Read the Markdown file with UTF-8 encoding
+    with open("description.md", "r", encoding="utf-8") as md_file:
+        md_content = md_file.read()
+    
+    # Convert Markdown to HTML
+    html_content = markdown.markdown(md_content)
+
+    # Pass the HTML content to the template
+    return render_template("home.html", description=html_content)
+
 
 @app.route("/record")
 def record():
@@ -81,6 +91,30 @@ def transcribe():
     except Exception as e:
         print(f"Error during transcription: {e}")
         return jsonify({"message": "An error occurred during transcription!"}), 500
+
+@app.route("/entries", methods=["GET"])
+def entries():
+    try:
+        # List all JSON files in the /transcriptions folder
+        entries = []
+        for filename in os.listdir(TRANSCRIPTIONS_DIR):
+            if filename.endswith(".json"):
+                file_path = os.path.join(TRANSCRIPTIONS_DIR, filename)
+                
+                # Read and parse the JSON file
+                with open(file_path, "r") as json_file:
+                    data = json.load(json_file)
+                    entries.append({
+                        "note_name": data.get("note_name", "Unknown"),
+                        "date_created": data.get("date_created", "Unknown"),
+                        "transcription": data.get("transcription", "No transcription available"),
+                    })
+
+        # Render the entries page with the entries list
+        return render_template("entries.html", entries=entries)
+    except Exception as e:
+        print(f"Error loading entries: {e}")
+        return jsonify({"message": "An error occurred while loading entries!"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
