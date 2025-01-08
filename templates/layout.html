@@ -35,36 +35,37 @@
         header {
             background-color: var(--header-footer-color);
             color: var(--text-color);
-            padding: 10px;
+            padding: 10px 20px;
             text-align: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         nav {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(4, auto); /* Default for desktop: Horizontal row */
             justify-content: center;
-            gap: 20px;
+            align-items: center;
+            gap: 15px;
             padding: 10px 0;
+            background-color: var(--header-footer-color);
         }
 
         nav a {
             color: var(--text-color);
             text-decoration: none;
             font-weight: bold;
-            padding: 5px 10px;
+            padding: 8px 12px;
             border-radius: 5px;
             transition: background-color 0.3s ease, color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            justify-content: center;
         }
 
         nav a:hover {
             background-color: var(--accent-color);
             color: var(--background-color);
-        }
-
-        .icon-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
         }
 
         main {
@@ -80,10 +81,15 @@
             color: var(--text-color);
         }
 
+        /* Responsive Design */
         @media (max-width: 768px) {
             nav {
-                flex-direction: column;
-                gap: 10px;
+                grid-template-columns: repeat(2, 1fr); /* Mobile view: 2x2 grid */
+            }
+
+            nav a {
+                justify-content: center;
+                width: 100%; /* Ensure buttons take up equal width */
             }
         }
     </style>
@@ -91,13 +97,13 @@
 <body>
     <header>
         <h1>yapJournal</h1>
-        <nav>
-            <a href="/" class="icon-button"><i class="fas fa-home"></i> Home</a>
-            <a href="/record" class="icon-button"><i class="fas fa-microphone"></i> Record</a>
-            <a href="/entries" class="icon-button"><i class="fas fa-book"></i> Entries</a>
-            <a href="/upload_audio" class="icon-button"><i class="fas fa-upload"></i> Upload</a>
-        </nav>
     </header>
+    <nav>
+        <a href="/" class="icon-button"><i class="fas fa-home"></i> Home</a>
+        <a href="/record" class="icon-button"><i class="fas fa-microphone"></i> Record</a>
+        <a href="/entries" class="icon-button"><i class="fas fa-book"></i> Entries</a>
+        <a href="/upload_audio" class="icon-button"><i class="fas fa-upload"></i> Upload</a>
+    </nav>
     <main>
         {% block content %}{% endblock %}
     </main>
