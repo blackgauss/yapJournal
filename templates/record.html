@@ -4,21 +4,25 @@
 
 {% block content %}
     <h2>Record Audio</h2>
-    <p>Enter a name for your recording (or leave blank for default):</p>
-    <input type="text" id="noteName" placeholder="Enter note name" />
-    
-    <label for="tag">Select Tag:</label>
-    <select id="tag">
-        <option value="miscellaneous">Miscellaneous</option>
-        <option value="to-do">To-Do</option>
-        <option value="yap-dev">yapDev</option>
-    </select>
-    
-    <p>Click the button below to start recording audio.</p>
-    <button id="startRecording">Start Recording</button>
-    <button id="stopRecording" disabled>Stop Recording</button>
-    <button id="uploadRecording" disabled>Upload Recording</button>
-    <button id="transcribeRecording" disabled>Transcribe Recording</button>
+    <div class="form-container">
+        <label for="noteName">Enter a name for your recording (optional):</label>
+        <input type="text" id="noteName" placeholder="Enter note name" />
+
+        <label for="tag">Select Tag:</label>
+        <select id="tag">
+            <option value="miscellaneous">Miscellaneous</option>
+            <option value="to-do">To-Do</option>
+            <option value="yap-dev">yapDev</option>
+        </select>
+    </div>
+
+    <div class="button-container">
+        <button id="startRecording" class="btn-primary">🎙 Start Recording</button>
+        <button id="stopRecording" class="btn-primary" disabled>🛑 Stop Recording</button>
+        <button id="uploadRecording" class="btn-secondary" disabled>⬆️ Upload</button>
+        <button id="transcribeRecording" class="btn-secondary" disabled>📝 Transcribe</button>
+    </div>
+
     <p id="status">Status: Not Recording</p>
 
     <h3>Recorded Audio</h3>
@@ -27,8 +31,71 @@
     <h3>Transcription Result</h3>
     <pre id="transcriptionResult"></pre>
 
+    <style>
+        .form-container {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input, select {
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid var(--text-color);
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: var(--background-color);
+        }
+
+        .btn-primary:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: var(--text-color);
+            color: var(--background-color);
+        }
+
+        .btn-secondary:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .button-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+
     <script>
-        // Select buttons and UI elements
+        // JavaScript remains the same, but ensure responsiveness works with updated CSS
         const startButton = document.getElementById("startRecording");
         const stopButton = document.getElementById("stopRecording");
         const uploadButton = document.getElementById("uploadRecording");
@@ -39,75 +106,61 @@
         const audioPlayback = document.getElementById("audioPlayback");
         const transcriptionResult = document.getElementById("transcriptionResult");
 
-        // MediaRecorder variables
         let mediaRecorder;
         let audioChunks = [];
         let uploadedFileName = null;
 
-        // Start Recording
         startButton.addEventListener("click", async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
-
-                // Update UI
                 statusText.textContent = "Status: Recording...";
                 startButton.disabled = true;
                 stopButton.disabled = false;
 
-                // Capture audio chunks
                 mediaRecorder.ondataavailable = (event) => {
                     audioChunks.push(event.data);
                 };
 
-                // Handle stop recording
                 mediaRecorder.onstop = () => {
                     const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
                     const audioUrl = URL.createObjectURL(audioBlob);
                     audioPlayback.src = audioUrl;
 
-                    // Reset UI
                     statusText.textContent = "Status: Not Recording";
                     startButton.disabled = false;
                     stopButton.disabled = true;
-                    uploadButton.disabled = false; // Enable upload button
+                    uploadButton.disabled = false;
                 };
 
-                // Start recording
                 audioChunks = [];
                 mediaRecorder.start();
             } catch (error) {
                 console.error("Error accessing microphone:", error);
-                alert("Could not access microphone. Please check permissions.");
+                alert("Microphone access denied. Please allow microphone access.");
             }
         });
 
-        // Stop Recording
         stopButton.addEventListener("click", () => {
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 mediaRecorder.stop();
             }
         });
 
-        // Upload Recording
         uploadButton.addEventListener("click", () => {
             if (!audioChunks.length) {
                 alert("No recording to upload!");
                 return;
             }
 
-            // Get the note name and tag
             const noteName = noteNameInput.value.trim();
             const tag = tagInput.value;
-
-            // Create a Blob from audio chunks
             const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
             const formData = new FormData();
             formData.append("audio", audioBlob);
-            formData.append("note_name", noteName); // Add the note name to the form data
-            formData.append("tag", tag); // Add the tag to the form data
+            formData.append("note_name", noteName);
+            formData.append("tag", tag);
 
-            // Upload the audio file to the server
             fetch("/upload_audio", {
                 method: "POST",
                 body: formData,
@@ -116,8 +169,8 @@
                 .then((data) => {
                     if (data.file_path) {
                         statusText.textContent = "Status: Upload successful!";
-                        uploadedFileName = data.file_path; // Save the file path for transcription
-                        transcribeButton.disabled = false; // Enable transcribe button
+                        uploadedFileName = data.file_path;
+                        transcribeButton.disabled = false;
                     } else {
                         statusText.textContent = "Status: Upload failed!";
                     }
@@ -128,14 +181,12 @@
                 });
         });
 
-        // Transcribe Recording
         transcribeButton.addEventListener("click", () => {
             if (!uploadedFileName) {
                 alert("No uploaded file to transcribe!");
                 return;
             }
 
-            // Send a POST request to the /transcribe endpoint
             fetch("/transcribe", {
                 method: "POST",
                 headers: {

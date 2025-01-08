@@ -6,6 +6,8 @@ from datetime import datetime
 import markdown
 import sqlite3
 
+from helper.keywords import extract_keywords_and_summary
+
 app = Flask(__name__)
 
 # Ensure the /audio directory exists
@@ -167,5 +169,37 @@ def entries():
         print(f"Error loading entries: {e}")
         return jsonify({"message": "An error occurred while loading entries!"}), 500
 
+
+@app.route('/summarize', methods=['POST'])
+def summarize():
+    data = request.get_json()
+    note_name = data.get('note_name')
+
+    if not note_name:
+        return jsonify({'error': 'Note name is required'}), 400
+
+    try:
+        # Fetch transcription text from the database
+        conn = sqlite3.connect("journal_entries.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT content FROM journal_entries WHERE title = ?", (note_name,))
+        result = cursor.fetchone()
+        conn.close()
+
+        if not result:
+            return jsonify({'error': 'Note not found'}), 404
+
+        text = result[0]
+        if not text:
+            return jsonify({'error': 'No transcription available for this note'}), 400
+
+        # Extract keywords and summary
+        result = extract_keywords_and_summary(text)
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"Error summarizing note: {e}")
+        return jsonify({'error': 'An error occurred while summarizing'}), 500
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, ssl_context=("ssl-certificates/cert.pem", "ssl-certificates/key.pem"), debug=True)

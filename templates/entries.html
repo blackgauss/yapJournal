@@ -30,9 +30,36 @@
             <p><strong>Tag:</strong> {{ entry.tag }}</p>
             <p><strong>Transcription:</strong></p>
             <p>{{ entry.transcription }}</p>
+            <button class="btn-secondary" onclick="extractSummary('{{ entry.note_name }}')">📝 Extract Summary</button>
+            <div id="summary-{{ entry.note_name }}" style="margin-top: 10px; display: none;">
+                <p><strong>Summary:</strong> <span class="summary-text"></span></p>
+                <p><strong>Keywords:</strong> <span class="keywords-text"></span></p>
+            </div>
         </div>
         {% else %}
         <p>No transcriptions found.</p>
         {% endfor %}
     </div>
+
+    <script>
+        async function extractSummary(noteName) {
+            const response = await fetch('/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ note_name: noteName }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const summaryDiv = document.getElementById(`summary-${noteName}`);
+                summaryDiv.querySelector('.summary-text').textContent = data.summary;
+                summaryDiv.querySelector('.keywords-text').textContent = data.keywords.join(', ');
+                summaryDiv.style.display = 'block';
+            } else {
+                alert('Error extracting summary. Please try again.');
+            }
+        }
+    </script>
 {% endblock %}
