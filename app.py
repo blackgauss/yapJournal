@@ -6,6 +6,7 @@ import markdown
 import sqlite3
 from helper.transcribe import transcribe_audio
 from helper.keywords import extract_keywords_and_summary
+from helper.topics import hierarchical_topic_matching, topics_hierarchy
 
 
 app = Flask(__name__)
@@ -57,16 +58,6 @@ def upload_audio():
     file_path = os.path.join(AUDIO_DIR, f"{safe_note_name}.wav")
     audio_file.save(file_path)
 
-    # Save metadata to the database
-    conn = sqlite3.connect("journal_entries.db")
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO journal_entries (title, content, tag, additional_info, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (title, "", tag, f"Audio saved at {file_path}", timestamp, timestamp))
-    conn.commit()
-    conn.close()
-
     return jsonify({
         "message": "Audio file uploaded successfully!",
         "file_path": file_path,
@@ -75,11 +66,11 @@ def upload_audio():
     })
 
 
-
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
     data = request.get_json()
     file_path = data.get("file_path")
+    tag = data.get("tag")
     if not file_path or not os.path.exists(file_path):
         return jsonify({"message": "Invalid file path!"}), 400
 
@@ -92,19 +83,29 @@ def transcribe():
         # Delete the audio file after transcription
         os.remove(file_path)
 
-        # Update the corresponding database entry
+         # Compute summary, keywords, and topics
+        summary_data = extract_keywords_and_summary(transcription_text)
+        summary = summary_data['summary']
+        keywords = ', '.join(summary_data['keywords'])  # Convert keywords list to a comma-separated string
+
+        topics = hierarchical_topic_matching(transcription_text, topics_hierarchy, top_broad_n=1, top_sub_n=3)
+        topics_keys_string = ', '.join(topics.keys())
+        
+        # Update the database entry with transcription, summary, keywords, and topics
         title = os.path.splitext(os.path.basename(file_path))[0]
         timestamp = datetime.now()
+        # Save metadata to the database
         conn = sqlite3.connect("journal_entries.db")
         cursor = conn.cursor()
         cursor.execute('''
-            UPDATE journal_entries
-            SET content = ?, updated_at = ?
-            WHERE title = ?
-        ''', (transcription_text, timestamp, title))
+            INSERT INTO journal_entries (title, content, tag, additional_info, created_at, updated_at, summary, keywords, topics)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (title, transcription_text, tag, f"Audio saved at {file_path}", timestamp, timestamp, summary, keywords, topics_keys_string))
         conn.commit()
         conn.close()
 
+        # Delete the audio file after processing
+        # os.remove(file_path)
         return jsonify({
             "message": "Transcription successful!",
             "transcription": transcription_text
@@ -126,7 +127,10 @@ def entries():
         cursor = conn.cursor()
 
         # Base query
-        sql_query = "SELECT title, content, tag, additional_info, created_at FROM journal_entries"
+        sql_query = """
+            SELECT title, content, tag, summary, keywords, topics, additional_info, created_at 
+            FROM journal_entries
+        """
         conditions = []
         params = []
 
@@ -135,9 +139,10 @@ def entries():
             conditions.append("tag = ?")
             params.append(tag_filter)
 
-        # Apply search filter (search in title and content)
+        # Apply search filter (search in title, content, and summary)
         if search_query:
-            conditions.append("(title LIKE ? OR content LIKE ?)")
+            conditions.append("(title LIKE ? OR content LIKE ? OR summary LIKE ?)")
+            params.append(f"%{search_query}%")
             params.append(f"%{search_query}%")
             params.append(f"%{search_query}%")
 
@@ -155,8 +160,11 @@ def entries():
                 "note_name": row[0],
                 "transcription": row[1],
                 "tag": row[2],
-                "additional_info": row[3],
-                "date_created": row[4]
+                "summary": row[3],
+                "keywords": row[4],
+                "topics": row[5],
+                "additional_info": row[6],
+                "date_created": row[7]
             }
             for row in cursor.fetchall()
         ]
@@ -164,6 +172,7 @@ def entries():
 
         # Render the entries page with the filtered entries
         return render_template("entries.html", entries=entries, tag_filter=tag_filter, search_query=search_query)
+
 
     except Exception as e:
         print(f"Error loading entries: {e}")
