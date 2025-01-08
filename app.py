@@ -1,12 +1,13 @@
 from flask import Flask, render_template, request, jsonify
 import os
-from helper.transcribe import transcribe_audio
 import json
 from datetime import datetime
 import markdown
 import sqlite3
-
+from helper.transcribe import transcribe_audio
+from helper.topics import get_semantic_topics
 from helper.keywords import extract_keywords_and_summary
+
 
 app = Flask(__name__)
 
@@ -200,6 +201,43 @@ def summarize():
     except Exception as e:
         print(f"Error summarizing note: {e}")
         return jsonify({'error': 'An error occurred while summarizing'}), 500
-    
+
+@app.route('/topics', methods=['POST'])
+def topics():
+    data = request.get_json()
+    note_name = data.get('note_name')
+
+    if not note_name:
+        return jsonify({'error': 'Note name is required'}), 400
+
+    try:
+        print(f"Fetching content for note: {note_name}")  # Debug log
+        # Fetch transcription text from the database
+        conn = sqlite3.connect("journal_entries.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT content FROM journal_entries WHERE title = ?", (note_name,))
+        result = cursor.fetchone()
+        conn.close()
+
+        if not result:
+            return jsonify({'error': 'Note not found'}), 404
+
+        text = result[0]
+        if not text:
+            return jsonify({'error': 'No transcription available for this note'}), 400
+
+        print(f"Extracting topics for text: {text[:100]}...")  # Debug log (limit to 100 chars)
+        # Extract semantic topics
+        topics = get_semantic_topics(text)
+        print(f"Extracted topics: {topics}")  # Debug log
+        return jsonify({'topics': topics})
+
+    except Exception as e:
+        print(f"Error extracting topics: {e}")
+        return jsonify({'error': 'An error occurred while extracting topics'}), 500
+
+
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, ssl_context=("ssl-certificates/cert.pem", "ssl-certificates/key.pem"), debug=True)

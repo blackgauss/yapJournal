@@ -23,12 +23,21 @@
     <div id="entries-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
         {% for entry in entries %}
         <div class="entry" style="margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #ddd;">
-            <button class="btn-secondary" style="margin-bottom: 10px;" onclick="extractSummary('{{ entry.note_name }}')">📝 Extract Summary</button>
-            
+            <!-- Buttons Row -->
+            <div class="button-row">
+                <button class="btn-secondary" onclick="extractSummary('{{ entry.note_name }}')">Summary</button>
+                <button class="btn-secondary" onclick="extractTopics('{{ entry.note_name }}')">Topics</button>
+            </div>
+
             <!-- Summary and Keywords Box -->
             <div id="summary-{{ entry.note_name }}" class="summary-box" style="display: none; margin-bottom: 15px;">
                 <p><strong>Summary:</strong> <span class="summary-text"></span></p>
                 <p><strong>Keywords:</strong> <span class="keywords-text"></span></p>
+            </div>
+
+            <!-- Topics Box -->
+            <div id="topics-{{ entry.note_name }}" class="topics-box" style="display: none; margin-bottom: 15px;">
+                <p><strong>Topics:</strong> <span class="topics-text"></span></p>
             </div>
 
             <h3>{{ entry.note_name }}</h3>
@@ -55,10 +64,11 @@
             overflow-wrap: break-word;
         }
 
-        #entries-container {
-            word-wrap: break-word;
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
+        .button-row {
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
         .btn-secondary {
@@ -76,36 +86,65 @@
             color: var(--background-color);
         }
 
-        .summary-box {
+        .summary-box, .topics-box {
             padding: 10px;
-            background-color: #f0f8ff; /* Light blue background for differentiation */
+            background-color: #f0f8ff; /* Light blue for summaries and topics */
             border: 1px solid #ccc;
             border-radius: 5px;
         }
 
-        .summary-box p {
+        .summary-box p, .topics-box p {
             margin: 5px 0;
         }
     </style>
 
     <script>
         async function extractSummary(noteName) {
-            const response = await fetch('/summarize', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ note_name: noteName }),
-            });
+            const summaryDiv = document.getElementById(`summary-${noteName}`);
+            summaryDiv.innerHTML = "<p>Loading summary...</p>"; // Loading indicator
+            summaryDiv.style.display = 'block';
 
-            if (response.ok) {
-                const data = await response.json();
-                const summaryDiv = document.getElementById(`summary-${noteName}`);
-                summaryDiv.querySelector('.summary-text').textContent = data.summary;
-                summaryDiv.querySelector('.keywords-text').textContent = data.keywords.join(', ');
-                summaryDiv.style.display = 'block'; // Show the summary box
-            } else {
-                alert('Error extracting summary. Please try again.');
+            try {
+                const response = await fetch('/summarize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ note_name: noteName }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    summaryDiv.innerHTML = `<p><strong>Summary:</strong> ${data.summary}</p>
+                                            <p><strong>Keywords:</strong> ${data.keywords.join(', ')}</p>`;
+                } else {
+                    summaryDiv.innerHTML = "<p>Error extracting summary. Please try again.</p>";
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                summaryDiv.innerHTML = "<p>An unexpected error occurred.</p>";
+            }
+        }
+
+        async function extractTopics(noteName) {
+            const topicsDiv = document.getElementById(`topics-${noteName}`);
+            topicsDiv.innerHTML = "<p>Loading topics...</p>"; // Loading indicator
+            topicsDiv.style.display = 'block';
+
+            try {
+                const response = await fetch('/topics', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ note_name: noteName }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    topicsDiv.innerHTML = `<p><strong>Topics:</strong> ${data.topics.join(', ')}</p>`;
+                } else {
+                    topicsDiv.innerHTML = "<p>Error extracting topics. Please try again.</p>";
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                topicsDiv.innerHTML = "<p>An unexpected error occurred.</p>";
             }
         }
     </script>
