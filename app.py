@@ -5,7 +5,6 @@ from datetime import datetime
 import markdown
 import sqlite3
 from helper.transcribe import transcribe_audio
-from helper.topics import get_semantic_topics
 from helper.keywords import extract_keywords_and_summary
 
 
@@ -225,12 +224,6 @@ def topics():
         text = result[0]
         if not text:
             return jsonify({'error': 'No transcription available for this note'}), 400
-
-        print(f"Extracting topics for text: {text[:100]}...")  # Debug log (limit to 100 chars)
-        # Extract semantic topics
-        topics = get_semantic_topics(text)
-        print(f"Extracted topics: {topics}")  # Debug log
-        return jsonify({'topics': topics})
 
     except Exception as e:
         print(f"Error extracting topics: {e}")

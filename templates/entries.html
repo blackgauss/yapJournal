@@ -25,8 +25,10 @@
         <div class="entry" style="margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #ddd;">
             <!-- Buttons Row -->
             <div class="button-row">
-                <button class="btn-secondary" onclick="extractSummary('{{ entry.note_name }}')">Summary</button>
-                <button class="btn-secondary" onclick="extractTopics('{{ entry.note_name }}')">Topics</button>
+                <button class="btn-secondary" id="summary-btn-{{ entry.note_name }}" 
+                        onclick="extractSummary('{{ entry.note_name }}', this)">Summary</button>
+                <button class="btn-secondary" id="topics-btn-{{ entry.note_name }}" 
+                        onclick="extractTopics('{{ entry.note_name }}', this)">Topics</button>
             </div>
 
             <!-- Summary and Keywords Box -->
@@ -37,7 +39,7 @@
 
             <!-- Topics Box -->
             <div id="topics-{{ entry.note_name }}" class="topics-box" style="display: none; margin-bottom: 15px;">
-                <p><strong>Topics:</strong> <span class="topics-text"></span></p>
+                <p><strong>Topics:</strong></p>
             </div>
 
             <h3>{{ entry.note_name }}</h3>
@@ -81,6 +83,12 @@
             font-size: 0.9rem;
         }
 
+        .btn-secondary:disabled {
+            background-color: #ddd;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
         .btn-secondary:hover {
             background-color: var(--accent-color);
             color: var(--background-color);
@@ -93,16 +101,20 @@
             border-radius: 5px;
         }
 
-        .summary-box p, .topics-box p {
+        .summary-box p, .topics-box p, .topics-box ul, .topics-list li {
             margin: 5px 0;
         }
     </style>
 
     <script>
-        async function extractSummary(noteName) {
+        async function extractSummary(noteName, button) {
             const summaryDiv = document.getElementById(`summary-${noteName}`);
-            summaryDiv.innerHTML = "<p>Loading summary...</p>"; // Loading indicator
+            const summaryText = summaryDiv.querySelector(".summary-text");
+            const keywordsText = summaryDiv.querySelector(".keywords-text");
+
             summaryDiv.style.display = 'block';
+            summaryDiv.innerHTML = "<p>Loading summary...</p>";
+            button.disabled = true;
 
             try {
                 const response = await fetch('/summarize', {
@@ -113,39 +125,84 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    summaryDiv.innerHTML = `<p><strong>Summary:</strong> ${data.summary}</p>
-                                            <p><strong>Keywords:</strong> ${data.keywords.join(', ')}</p>`;
+                    summaryDiv.innerHTML = `
+                        <p><strong>Summary:</strong> ${data.summary}</p>
+                        <p><strong>Keywords:</strong> ${data.keywords.join(', ')}</p>`;
                 } else {
                     summaryDiv.innerHTML = "<p>Error extracting summary. Please try again.</p>";
                 }
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error in extractSummary:', error);
                 summaryDiv.innerHTML = "<p>An unexpected error occurred.</p>";
+            } finally {
+                button.disabled = false;
             }
         }
 
-        async function extractTopics(noteName) {
-            const topicsDiv = document.getElementById(`topics-${noteName}`);
-            topicsDiv.innerHTML = "<p>Loading topics...</p>"; // Loading indicator
-            topicsDiv.style.display = 'block';
+        async function extractTopics(noteName, button) {
+    const topicsDiv = document.getElementById(`topics-${noteName}`);
+    topicsDiv.innerHTML = "<p>Loading topics...</p>";
+    button.disabled = true;
 
-            try {
-                const response = await fetch('/topics', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ note_name: noteName }),
-                });
+    try {
+        const response = await fetch('/topics', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note_name: noteName }),
+        });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    topicsDiv.innerHTML = `<p><strong>Topics:</strong> ${data.topics.join(', ')}</p>`;
-                } else {
-                    topicsDiv.innerHTML = "<p>Error extracting topics. Please try again.</p>";
+        if (response.ok) {
+            const data = await response.json();
+            console.log("Topics Response:", data); // Debug log
+
+            // Clear the topicsDiv and ensure it's ready for rendering
+            topicsDiv.innerHTML = "<p><strong>Topics:</strong></p>";
+
+            // Check if the response contains any data
+            if (Object.keys(data).length === 0) {
+                topicsDiv.innerHTML += "<p>No topics could be extracted from this text.</p>";
+                return;
+            }
+
+            // Create a <ul> element for topics
+            const ul = document.createElement("ul");
+            ul.className = "topics-list";
+            topicsDiv.appendChild(ul);
+
+            for (const [broadTopic, details] of Object.entries(data)) {
+                // Handle cases where subtopics are missing
+                if (!details.subtopics || details.subtopics.length === 0) {
+                    const broadLi = document.createElement("li");
+                    broadLi.textContent = `${broadTopic} (No subtopics found)`;
+                    ul.appendChild(broadLi);
+                    continue;
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                topicsDiv.innerHTML = "<p>An unexpected error occurred.</p>";
+
+                const broadScore = details.broad_score.toFixed(2);
+
+                // Add broad topic
+                const broadLi = document.createElement("li");
+                broadLi.innerHTML = `<strong>${broadTopic}</strong> (Score: ${broadScore})`;
+                ul.appendChild(broadLi);
+
+                // Add subtopics
+                details.subtopics.forEach(([subtopic, score]) => {
+                    const subtopicLi = document.createElement("li");
+                    subtopicLi.style.marginLeft = "20px";
+                    subtopicLi.textContent = `${subtopic} (Score: ${score.toFixed(2)})`;
+                    ul.appendChild(subtopicLi);
+                });
             }
+        } else {
+            topicsDiv.innerHTML = "<p>Error extracting topics. Please try again.</p>";
         }
+    } catch (error) {
+        console.error("Error in extractTopics:", error);
+        topicsDiv.innerHTML = "<p>An unexpected error occurred.</p>";
+    } finally {
+        button.disabled = false;
+    }
+}
+
     </script>
 {% endblock %}

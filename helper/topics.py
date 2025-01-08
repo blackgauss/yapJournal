@@ -1,37 +1,102 @@
-import spacy
+from sentence_transformers import SentenceTransformer, util
 
-# Load SpaCy's medium-sized English model for semantic understanding
-nlp = spacy.load("en_core_web_md")
+# Define hierarchical topics
+topics_hierarchy = {
+    "App Development": [
+        "Feature Prioritization",
+        "Custom UI/UX",
+        "Searchable Databases",
+        "Speech-to-Text Conversion",
+        "Modular App Design",
+        "Transcription Accuracy",
+    ],
+    "Self-Reflection": [
+        "Journaling as Self-Discovery",
+        "Purpose and Creativity",
+        "Productivity and Motivation",
+        "Oral Tradition",
+        "Behavioral Change",
+    ],
+    "Technology and Tools": [
+        "OpenAI API",
+        "AI-Powered Insights",
+        "Lightweight NLP Models",
+        "Recommendation Algorithms",
+        "Personal Cloud Storage",
+        "Raspberry Pi Devices",
+    ],
+    "Learning and Skill Building": [
+        "JavaScript for Frontend",
+        "LaTeX and Math Documentation",
+        "Python Projects",
+        "Problem Solving through Coding",
+        "Iterative Learning",
+    ],
+    "Meta-Level Observations": [
+        "Design Thinking",
+        "User-Centered Development",
+        "Data-Driven Creativity",
+        "Offline and Online Systems",
+    ],
+}
 
-def get_semantic_topics(text, predefined_topics=None, top_n=3):
+# Load the sentence transformer model
+try:
+    model = SentenceTransformer("all-MiniLM-L6-v2")
+    print("Model loaded successfully!")
+except Exception as e:
+    print(f"Error loading model: {e}")
+    raise
+
+
+def hierarchical_topic_matching(text, topics_hierarchy, top_broad_n=1, top_sub_n=3):
     """
-    Extract semantic topics based on similarity to predefined topic concepts.
-    :param text: Input text for analysis.
-    :param predefined_topics: List of predefined topic concepts.
-    :param top_n: Number of top topics to return.
-    :return: List of relevant topics.
+    Match broad topics first, then match subtopics within the top broad topic(s).
+
+    :param text: Input text to analyze.
+    :param topics_hierarchy: Dictionary mapping broad topics to their subtopics.
+    :param top_broad_n: Number of top broad topics to return.
+    :param top_sub_n: Number of top subtopics per broad topic to return.
+    :return: Dictionary with matched broad topics and their subtopics.
     """
-    # Default topics if none are provided
-    if predefined_topics is None:
-        predefined_topics = [
-    "journaling apps", "speech-to-text technology", "AI", "NLP", "database management", "frontend development",
-    "raspberry pi", "voice assistants", "openai", "gpt", "journaling habits", "personal development", "motivation",
-    "creativity", "time management", "problem solving", "to-do lists", "finding purpose", "data analysis",
-    "recommendation systems", "summarization", "user interface", "user experience", "feature prioritization",
-    "lightweight NLP models", "modular design", "intelligent search", "searchable brain", "custom solutions",
-    "learning frontend technologies", "mathematics", "latex", "self-learning roadmap", "vlogging", "youtube shorts",
-    "community building", "smart journaling assistants", "personal cloud storage", "behavioral AI"
-]
+    try:
+        # Validate input
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("Input text must be a non-empty string.")
 
+        print("Step 1: Starting broad topic matching...")
+        broad_topics = list(topics_hierarchy.keys())
+        text_embedding = model.encode(text, convert_to_tensor=True)
+        broad_embeddings = model.encode(broad_topics, convert_to_tensor=True)
 
-    # Preprocess text and calculate semantic similarity
-    doc = nlp(text)
-    topic_scores = {}
-    for topic in predefined_topics:
-        topic_doc = nlp(topic)
-        similarity = doc.similarity(topic_doc)
-        topic_scores[topic] = similarity
+        # Compute similarities for broad topics
+        broad_similarities = util.cos_sim(text_embedding, broad_embeddings)
+        broad_scores = [(broad_topics[i], float(broad_similarities[0][i])) for i in range(len(broad_topics))]
+        broad_scores = sorted(broad_scores, key=lambda x: x[1], reverse=True)
+        top_broad_topics = broad_scores[:top_broad_n]
+        print(f"Step 2: Broad topic matches: {top_broad_topics}")
 
-    # Sort topics by relevance
-    sorted_topics = sorted(topic_scores.items(), key=lambda x: x[1], reverse=True)
-    return [topic for topic, score in sorted_topics[:top_n]]
+        # Step 2: Match Subtopics within Top Broad Topics
+        results = {}
+        for broad_topic, broad_score in top_broad_topics:
+            print(f"Step 3: Matching subtopics for broad topic: {broad_topic}")
+            subtopics = topics_hierarchy[broad_topic]
+            sub_embeddings = model.encode(subtopics, convert_to_tensor=True)
+
+            # Compute similarities for subtopics
+            sub_similarities = util.cos_sim(text_embedding, sub_embeddings)
+            sub_scores = [(subtopics[i], float(sub_similarities[0][i])) for i in range(len(subtopics))]
+            sub_scores = sorted(sub_scores, key=lambda x: x[1], reverse=True)
+            top_subtopics = sub_scores[:top_sub_n]
+
+            results[broad_topic] = {
+                "broad_score": broad_score,
+                "subtopics": top_subtopics,
+            }
+
+        print(f"Step 4: Final results: {results}")
+        return results
+
+    except Exception as e:
+        print(f"Error in hierarchical topic matching: {e}")
+        return {"error": str(e)}
