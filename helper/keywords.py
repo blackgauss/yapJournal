@@ -3,9 +3,37 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 from collections import Counter
 import re
 
+# List of filler words and phrases to remove
+FILLER_WORDS = {
+    "you know", "um", "yeah", "like", "uh", "so", "well", "actually", "basically", "right",
+    "I mean", "kind of", "sort of", "you see", "just"
+}
+
+def preprocess_text(text):
+    """
+    Preprocess the text by:
+    1. Removing filler words and phrases.
+    2. Cleaning up punctuation after filler word removal.
+    3. Normalizing spaces, tabs, and newlines.
+    """
+    # Remove filler words and phrases
+    for filler in FILLER_WORDS:
+        text = re.sub(rf"\b{re.escape(filler)}\b[,\.]?", "", text, flags=re.IGNORECASE)
+
+    # Remove redundant spaces around punctuation (e.g., " ,", " .")
+    text = re.sub(r"\s+([,.!?])", r"\1", text)
+
+    # Normalize spaces
+    text = re.sub(r"\s+", " ", text).strip()
+
+    return text
+
 def extract_keywords_and_summary(text, num_keywords=5, num_sentences=3):
+    """
+    Extract keywords and summary from the given text.
+    """
     # Preprocess the text
-    text = re.sub(r'\s+', ' ', text)
+    text = preprocess_text(text)
     stop_words = set(stopwords.words('english'))
 
     # Tokenize and remove stopwords

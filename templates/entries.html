@@ -5,7 +5,6 @@
 {% block content %}
     <h2>All Transcriptions</h2>
 
-    <!-- Filter and Search Form -->
     <form method="GET" action="/entries" style="margin-bottom: 20px;">
         <label for="tagFilter">Filter by Tag:</label>
         <select id="tagFilter" name="tag">
@@ -21,25 +20,73 @@
         <button type="submit">Apply</button>
     </form>
 
-    <!-- Entries Container -->
     <div id="entries-container" style="max-height: 500px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
         {% for entry in entries %}
         <div class="entry" style="margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #ddd;">
+            <button class="btn-secondary" style="margin-bottom: 10px;" onclick="extractSummary('{{ entry.note_name }}')">📝 Extract Summary</button>
+            
+            <!-- Summary and Keywords Box -->
+            <div id="summary-{{ entry.note_name }}" class="summary-box" style="display: none; margin-bottom: 15px;">
+                <p><strong>Summary:</strong> <span class="summary-text"></span></p>
+                <p><strong>Keywords:</strong> <span class="keywords-text"></span></p>
+            </div>
+
             <h3>{{ entry.note_name }}</h3>
             <p><strong>Date Created:</strong> {{ entry.date_created }}</p>
             <p><strong>Tag:</strong> {{ entry.tag }}</p>
             <p><strong>Transcription:</strong></p>
             <p>{{ entry.transcription }}</p>
-            <button class="btn-secondary" onclick="extractSummary('{{ entry.note_name }}')">📝 Extract Summary</button>
-            <div id="summary-{{ entry.note_name }}" style="margin-top: 10px; display: none;">
-                <p><strong>Summary:</strong> <span class="summary-text"></span></p>
-                <p><strong>Keywords:</strong> <span class="keywords-text"></span></p>
-            </div>
         </div>
         {% else %}
         <p>No transcriptions found.</p>
         {% endfor %}
     </div>
+
+    <style>
+        .entry {
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+
+        .entry p {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+
+        #entries-container {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+
+        .btn-secondary {
+            background-color: var(--text-color);
+            color: var(--background-color);
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--accent-color);
+            color: var(--background-color);
+        }
+
+        .summary-box {
+            padding: 10px;
+            background-color: #f0f8ff; /* Light blue background for differentiation */
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .summary-box p {
+            margin: 5px 0;
+        }
+    </style>
 
     <script>
         async function extractSummary(noteName) {
@@ -56,7 +103,7 @@
                 const summaryDiv = document.getElementById(`summary-${noteName}`);
                 summaryDiv.querySelector('.summary-text').textContent = data.summary;
                 summaryDiv.querySelector('.keywords-text').textContent = data.keywords.join(', ');
-                summaryDiv.style.display = 'block';
+                summaryDiv.style.display = 'block'; // Show the summary box
             } else {
                 alert('Error extracting summary. Please try again.');
             }
