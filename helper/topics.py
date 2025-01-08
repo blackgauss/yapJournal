@@ -14,15 +14,15 @@ def get_semantic_topics(text, predefined_topics=None, top_n=3):
     # Default topics if none are provided
     if predefined_topics is None:
         predefined_topics = [
-            "technology",
-            "education",
-            "healthcare",
-            "business",
-            "entertainment",
-            "sports",
-            "science",
-            "politics",
-        ]
+    "journaling apps", "speech-to-text technology", "AI", "NLP", "database management", "frontend development",
+    "raspberry pi", "voice assistants", "openai", "gpt", "journaling habits", "personal development", "motivation",
+    "creativity", "time management", "problem solving", "to-do lists", "finding purpose", "data analysis",
+    "recommendation systems", "summarization", "user interface", "user experience", "feature prioritization",
+    "lightweight NLP models", "modular design", "intelligent search", "searchable brain", "custom solutions",
+    "learning frontend technologies", "mathematics", "latex", "self-learning roadmap", "vlogging", "youtube shorts",
+    "community building", "smart journaling assistants", "personal cloud storage", "behavioral AI"
+]
+
 
     # Preprocess text and calculate semantic similarity
     doc = nlp(text)

@@ -4,6 +4,7 @@ audio/
 ssl-certificates/cert.pem
 ssl-certificates/key.pem
 journal_entries.db
+journal_entries_export.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
