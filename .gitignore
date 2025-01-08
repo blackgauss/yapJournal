@@ -3,6 +3,7 @@ transcriptions/
 audio/
 ssl-certificates/cert.pem
 ssl-certificates/key.pem
+journal_entries.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -3,21 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Simple Flask App{% endblock %}</title>
+    <title>{% block title %}yapJournal{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Branding Colors */
+        :root {
+            --background-color: #FAF7F0;
+            --header-footer-color: #D8D2C2;
+            --accent-color: #B17457;
+            --text-color: #4A4947;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        header {
+            background-color: var(--header-footer-color);
+            color: var(--text-color);
+            padding: 10px;
             text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 10px 0;
+        }
+
         nav a {
-            margin: 0 15px;
+            color: var(--text-color);
             text-decoration: none;
-            color: #007BFF;
             font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+
         nav a:hover {
-            text-decoration: underline;
+            background-color: var(--accent-color);
+            color: var(--background-color);
+        }
+
+        .icon-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        main {
+            flex: 1;
+            padding: 20px;
+        }
+
+        footer {
+            background-color: var(--header-footer-color);
+            text-align: center;
+            padding: 10px;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+            color: var(--text-color);
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                gap: 10px;
+            }
         }
     </style>
 </head>
@@ -25,9 +92,10 @@
     <header>
         <h1>yapJournal</h1>
         <nav>
-            <a href="/">Home</a>
-            <a href="/record">Record</a>
-            <a href="/entries">Entries</a>
+            <a href="/" class="icon-button"><i class="fas fa-home"></i> Home</a>
+            <a href="/record" class="icon-button"><i class="fas fa-microphone"></i> Record</a>
+            <a href="/entries" class="icon-button"><i class="fas fa-book"></i> Entries</a>
+            <a href="/upload_audio" class="icon-button"><i class="fas fa-upload"></i> Upload</a>
         </nav>
     </header>
     <main>
