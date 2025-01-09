@@ -68,9 +68,13 @@ def upload_audio():
 
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
+    print("running")
     data = request.get_json()
     file_path = data.get("file_path")
     tag = data.get("tag")
+
+    print("tag")
+
     if not file_path or not os.path.exists(file_path):
         return jsonify({"message": "Invalid file path!"}), 400
 
@@ -89,7 +93,12 @@ def transcribe():
         keywords = ', '.join(summary_data['keywords'])  # Convert keywords list to a comma-separated string
 
         topics = hierarchical_topic_matching(transcription_text, topics_hierarchy, top_broad_n=1, top_sub_n=3)
+        print(list(topics.keys())[0])
+        subtopics_array = topics[list(topics.keys())[0]]["subtopics"]
+        subtopics = [subtopic[0] for subtopic in subtopics_array]
+        subtopics_key_string = ', '.join(subtopics)
         topics_keys_string = ', '.join(topics.keys())
+        topics_keys_string += f": {subtopics_key_string}"
         
         # Update the database entry with transcription, summary, keywords, and topics
         title = os.path.splitext(os.path.basename(file_path))[0]

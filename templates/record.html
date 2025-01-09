@@ -192,7 +192,7 @@
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ file_path: uploadedFileName }),
+                body: JSON.stringify({ file_path: uploadedFileName, tag: tagInput.value }),
             })
                 .then((response) => response.json())
                 .then((data) => {
