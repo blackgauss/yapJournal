@@ -21,6 +21,18 @@ TRANSCRIPTIONS_DIR = "transcriptions"
 if not os.path.exists(TRANSCRIPTIONS_DIR):
     os.makedirs(TRANSCRIPTIONS_DIR)
 
+# Initialize tags at startup
+def init_tags():
+    conn = sqlite3.connect("journal_entries.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT tag FROM journal_entries")
+    tags = [tag[0] for tag in cursor.fetchall() if tag[0] is not None]
+    conn.close()
+    return tags
+
+# Store tags in app config
+app.config['TAGS'] = init_tags()
+    
 @app.route("/")
 def home():
     # Read the Markdown file with UTF-8 encoding
@@ -68,12 +80,9 @@ def upload_audio():
 
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
-    print("running")
     data = request.get_json()
     file_path = data.get("file_path")
     tag = data.get("tag")
-
-    print("tag")
 
     if not file_path or not os.path.exists(file_path):
         return jsonify({"message": "Invalid file path!"}), 400
@@ -126,7 +135,10 @@ def transcribe():
 
 @app.route("/entries", methods=["GET"])
 def entries():
+    listOfTags = app.config['TAGS']
+    print(listOfTags)
     try:
+        tag1 = listOfTags[1]
         # Get query parameters for filtering and searching
         tag_filter = request.args.get("tag", "").strip()
         search_query = request.args.get("search", "").strip()
@@ -180,7 +192,7 @@ def entries():
         conn.close()
 
         # Render the entries page with the filtered entries
-        return render_template("entries.html", entries=entries, tag_filter=tag_filter, search_query=search_query)
+        return render_template("entries.html", tags=listOfTags, entries=entries, tag_filter=tag_filter, search_query=search_query)
 
 
     except Exception as e:
