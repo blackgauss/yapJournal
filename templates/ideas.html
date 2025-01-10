@@ -1,0 +1,108 @@
+{% extends "layout.html" %}
+
+{% block title %}Ideas{% endblock %}
+
+{% block content %}
+<div class="markdown-content">
+    {{ description|safe }}
+</div>
+
+<style>
+    /* General styling for the markdown content */
+    .markdown-content {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        font-size: 16px;
+        color: #333;
+        padding: 10px 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 10px;
+    }
+
+    /* Headings styling */
+    .markdown-content h1 {
+        font-size: 24px;
+        font-weight: bold;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        color: #222;
+    }
+
+    .markdown-content h2 {
+        font-size: 20px;
+        font-weight: bold;
+        margin-top: 15px;
+        margin-bottom: 8px;
+        color: #444;
+    }
+
+    .markdown-content h3 {
+        font-size: 18px;
+        font-weight: bold;
+        margin-top: 10px;
+        margin-bottom: 5px;
+        color: #666;
+    }
+
+    /* Lists */
+    .markdown-content ul {
+        padding-left: 20px;
+        margin-bottom: 10px;
+    }
+
+    .markdown-content ul li {
+        margin-bottom: 8px;
+    }
+
+    /* Preformatted text */
+    .markdown-content pre {
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+        font-size: 14px;
+    }
+
+    /* Blockquotes */
+    .markdown-content blockquote {
+        border-left: 4px solid #ccc;
+        margin: 10px 0;
+        padding-left: 15px;
+        color: #555;
+        font-style: italic;
+    }
+
+    /* Links */
+    .markdown-content a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .markdown-content a:hover {
+        text-decoration: underline;
+    }
+
+    /* Responsive adjustments for mobile */
+    @media (max-width: 768px) {
+        .markdown-content {
+            font-size: 14px;
+            padding: 8px 10px;
+        }
+
+        .markdown-content h1 {
+            font-size: 20px;
+        }
+
+        .markdown-content h2 {
+            font-size: 18px;
+        }
+
+        .markdown-content h3 {
+            font-size: 16px;
+        }
+    }
+</style>
+{% endblock %}

@@ -7,7 +7,8 @@ import sqlite3
 from helper.transcribe import transcribe_audio
 from helper.keywords import extract_keywords_and_summary
 from helper.topics import hierarchical_topic_matching, topics_hierarchy
-
+# Custom modules/functions (update these based on your project structure)
+from helper.get_insights import extract_actionable_steps, save_steps_to_markdown
 
 app = Flask(__name__)
 
@@ -259,6 +260,29 @@ def topics():
         print(f"Error extracting topics: {e}")
         return jsonify({'error': 'An error occurred while extracting topics'}), 500
 
+@app.route('/steps', methods=['GET', 'POST'])
+def steps():
+    # Read the Markdown file with UTF-8 encoding
+    with open("actionable_steps.md", "r", encoding="utf-8") as md_file:
+        md_content = md_file.read()
+    
+    # Convert Markdown to HTML
+    html_content = markdown.markdown(md_content)
+
+    # Pass the HTML content to the template
+    return render_template("steps.html", description=html_content)
+
+@app.route('/ideas', methods=['GET', 'POST'])
+def ideas():
+    # Read the Markdown file with UTF-8 encoding
+    with open("filtered_ideas.md", "r", encoding="utf-8") as md_file:
+        md_content = md_file.read()
+    
+    # Convert Markdown to HTML
+    html_content = markdown.markdown(md_content)
+
+    # Pass the HTML content to the template
+    return render_template("ideas.html", description=html_content)
 
 
 
