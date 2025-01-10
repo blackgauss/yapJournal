@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime
 from typing import List, Optional
+import sqlite3
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -11,18 +12,13 @@ load_dotenv()
 # Initialize OpenAI client
 client = OpenAI()
 
-from pydantic import BaseModel
-from typing import List
-
-from pydantic import BaseModel
-from typing import List
-
 class FilteredIdea(BaseModel):
     probability_of_thousand_in_week: float # probability of making $1000 in the next week
     overall_ranking: str  # Overall ranking score for the idea
     description: str  # Detailed explanation of the idea
     time_needed: List[float]  # Time required over 1 day, 1 week, 1 month, 1 year
-    earnings_forecast: List[float]  # Earnings forecast for [1 week, 1 month, 1 year]
+    bullish_earnings_forecast: List[float]  # Earnings forecast for [1 week, 1 month, 1 year]
+    bearish_earnings_forecast: List[float]  # Earnings forecast for [1 week, 1 month, 1 year]
     how_realistic: str  # How realistic the idea is
     description_of_earning_streams: str # Explaination of where earnings are coming from
     skills: List[str]  # List of skills required
@@ -36,6 +32,7 @@ class FilteredIdea(BaseModel):
     suitability_to_user: str  # Explanation of how well suited this idea is to the user
     passive_income: bool # Whether the idea generates passive income
     user_competiveness: str # How competitive the user is in this niche (In two sentences)
+
 class FilteredIdeaExtraction(BaseModel):
     ideas: List[FilteredIdea]
 
@@ -72,36 +69,29 @@ def filter_ideas(journal_content):
             messages=[
                 {
                     "role": "system",
-"content": (
-    "You are an expert strategist and productivity coach. Your task is to filter journal entries to identify "
-    "only the most important ideas and thoughts for making money. Be generous in selecting ideas, "
-    "considering non-traditional wisdom and opportunities that align with the user's personality and skills. "
-    "Focus on structuring the data into concise, actionable, and cohesive insights with detailed attributes. "
-    "Choose the ideas that are the most innovative, impactful, and feasible for generating income. "
-    "REALLY FOCUS ON IDEAS THAT WILL MAKE $500 OR MORE IN THE NEXT MONTH"
-    "HEAVILY RELY ON THE USER'S JOURNAL TO UNDERSTAND THEIR PERSONALITY AND SKILLS"
-    "Do not choose based on general likelihood of success, but rather on the potential impact and alignment with the user's goals. "
-    "You MUST choose ideas that, even if failed, will teach the user valuable experience. "
-    "Be very objective but also creative in your selection. "
-    "For each idea, include the following attributes: "
-    "- **Description**: A detailed explanation of the idea. "
-    "- **Time Needed**: A breakdown of time required over 1 day, 1 week, 1 month, and 1 year. "
-    "- **Skills**: List of skills required to execute the idea. "
-    "- **Man Hours**: Estimated man hours needed for a beginner, intermediate, and expert. "
-    "- **Novelty Score**: A score (1-10) representing how novel the idea is. "
-    "- **Difficulty Score**: A score (1-10) representing how challenging the idea is. "
-    "- **Location**: Relevant country and state. "
-    "- **Audience**: Demographic or target audience for the idea. "
-    "- **Additional Resources**: Any extra resources required to make the idea work. "
-    "- **Additional Data Needed**: Specify any data needed to refine or execute the idea. "
-    "- **Overall Ranking**: A combined score (1-10) for the idea's potential. "
-    "- **Suitability to User**: Explanation of how well this idea fits the user's personality and skills."
-    "- **Passive Income**: Whether the idea generates passive income."
-    "- **User Competitiveness**: How competitive the user is in this niche."
-    "- **Probability of $1000/Week**: Probability of making $1000 in the next week."
-    "- **Realistic**: How realistic the idea is."
-    "Identify 50 ideas in total"
-)
+"content":(
+                        "Your task is to extract 30 innovative, actionable ideas for making money based on the user's journal. "
+                        "Each idea must include the following attributes, with insightful responses for each field:"
+                        "\n- **Probability of $1000/Week**: A float value for the probability of making $1000 in the next week."
+                        "\n- **Overall Ranking**: A single string score or rating (e.g., 'High', 'Moderate')."
+                        "\n- **Description**: A one paragraph detailed explanation of the idea. This should be formative and technical so as to be an actual blueprint for the idea."
+                        "\n- **Time Needed**: A list of time estimates for [1 day, 1 week, 1 month, 1 year]."
+                        "\n- **Earnings Forecast**: A list of earnings forecasts for [1 week, 1 month, 1 year]."
+                        "\n- **How Realistic**: A brief statement on how achievable the idea is."
+                        "\n- **Description of Earning Streams**: A concise explanation of where earnings come from."
+                        "\n- **Skills Required**: A list of skills necessary to execute the idea."
+                        "\n- **Man Hours**: Estimated hours for beginner, intermediate, and expert levels."
+                        "\n- **Novelty Score**: A float score (1-10) for how novel the idea is."
+                        "\n- **Difficulty Score**: A float score (1-10) for how challenging the idea is."
+                        "\n- **Location**: A list containing [Country, State]."
+                        "\n- **Audience**: A brief description of the target demographic."
+                        "\n- **Additional Resources**: Resources required to execute the idea."
+                        "\n- **Additional Data Needed**: Data needed to refine or execute the idea."
+                        "\n- **Suitability to User**: A concise explanation (1-2 sentences) on how well this idea fits the user's skills and goals."
+                        "\n- **Passive Income**: A boolean indicating if the idea generates passive income."
+                        "\n- **User Competitiveness**: A concise explanation (2 sentences max) of how competitive the user is in this niche."
+                        "\nFocus on variety and ensure brevity for each response. Generate exactly 30 ideas in your response."
+                    )
 
                 },
                 {
@@ -110,11 +100,12 @@ def filter_ideas(journal_content):
                 }
             ],
             response_format=FilteredIdeaExtraction,
+                top_p=1.0,  # Include more diverse possibilities
+                temperature=0.8 # Control the randomness of the output
         )
 
         # Extract and return the filtered ideas
         filtered_ideas = response.choices[0].message.parsed
-        print(filtered_ideas)
         return filtered_ideas
     except Exception as e:
         print(f"Error filtering ideas: {e}")
@@ -138,7 +129,6 @@ def extract_actionable_steps(journal_content):
     "Your role is to guide an incredibly skilled and driven individual—a version of your younger self—to turn their technical abilities, problem-solving skills, and creativity into wealth. "
     "You understand this person's unique identity and talents, and every piece of advice you provide is custom-tailored to their goals and abilities. "
     "You refuse to give generic advice or solutions. Instead, your guidance reflects the user's potential, ambition, and the insights provided in their journal entries. "
-    
     "Your primary objective is to help this person generate significant income—up to $1 million in one year—by leveraging their skills and the insights in their journal. "
     "To achieve this, you will: "
     "1. Extract actionable ideas from their journal entries, focusing on coding projects, monetizable ideas, and impactful opportunities. "
@@ -148,7 +138,6 @@ def extract_actionable_steps(journal_content):
     "5. Clearly state any additional information you need from the user to refine your advice and maximize its relevance and impact. "
     "6. Only choose topics which the user will learn from even if the plan fails."
     "7. Every task should build on their portfoli and continue their brand."
-
     "For each step, include: "
     "- **Category**: A label. "
     "- **Description**: A concise explanation of the step. "
@@ -161,8 +150,7 @@ def extract_actionable_steps(journal_content):
     "- **Best Season**: The season during which this step will be most effective (e.g., Spring, Summer, Fall, Winter). "
     "- **Next Contact**: The person or role the user should reach out to next to progress on this step. "
     "- **Request For More Information**: Any additional details you need from the user to refine this step. "
-    "Make 50 tasks."
-    
+    "Make 100 tasks."  
     "Do not provide vague or generalized advice. Ensure every recommendation feels like it was crafted uniquely for the user and aligns with their journal entries."
 )
                 },
@@ -172,11 +160,11 @@ def extract_actionable_steps(journal_content):
                 }
             ],
             response_format=ActionableStepsExtraction,
+            top_p=1.0  # Include more diverse possibilities
         )
         
         # Extract and return the actionable steps
         actionable_steps = response.choices[0].message.parsed
-        print(actionable_steps)
         return actionable_steps
 
     except Exception as e:
@@ -210,10 +198,14 @@ def save_filtered_ideas_to_md(entry_metadata, filtered_ideas: FilteredIdeaExtrac
                 txt_file.write(f"- 1 Year: {idea.time_needed[3]} hours\n\n")
                 txt_file.write(f"**Earnings Source:**\n{idea.description_of_earning_streams}\n\n")
                 txt_file.write(f"**Probability Of $1000/Week:**\n{idea.probability_of_thousand_in_week}\n\n")
-                txt_file.write("**Earnings Forecast:**\n\n")
-                txt_file.write(f"- 1 Week: ${idea.earnings_forecast[0]:,.2f}\n")
-                txt_file.write(f"- 1 Month: ${idea.earnings_forecast[1]:,.2f}\n")
-                txt_file.write(f"- 1 Year: ${idea.earnings_forecast[2]:,.2f}\n\n")
+                txt_file.write("**Bull Earnings Forecast:**\n\n")
+                txt_file.write(f"- 1 Week: ${idea.bullish_earnings_forecast[0]:,.2f}\n")
+                txt_file.write(f"- 1 Month: ${idea.bullish_earnings_forecast[1]:,.2f}\n")
+                txt_file.write(f"- 1 Year: ${idea.bullish_earnings_forecast[2]:,.2f}\n\n")
+                txt_file.write("**Bear Earnings Forecast:**\n\n")
+                txt_file.write(f"- 1 Week: ${idea.bearish_earnings_forecast[0]:,.2f}\n")
+                txt_file.write(f"- 1 Month: ${idea.bearish_earnings_forecast[1]:,.2f}\n")
+                txt_file.write(f"- 1 Year: ${idea.bearish_earnings_forecast[2]:,.2f}\n\n")
                 txt_file.write(f"**Skills:**\n- {', '.join(idea.skills)}\n\n")
                 txt_file.write("**Man Hours:**\n\n")
                 txt_file.write(f"- Beginner: {idea.man_hours[0]} hours\n")
@@ -232,7 +224,7 @@ def save_filtered_ideas_to_md(entry_metadata, filtered_ideas: FilteredIdeaExtrac
                 txt_file.write("---\n\n")
         print(f"Filtered ideas successfully saved to {output_file}")
     except Exception as e:
-        print(f"Error saving filtered ideas to .txt file: {e}")
+        print(f"Error saving filtered ideas to .md file: {e}")
 
         
 def save_steps_to_markdown(tasks: ActionableStepsExtraction, output_file: str = 'actionable_steps.md'):
@@ -269,7 +261,7 @@ def save_steps_to_markdown(tasks: ActionableStepsExtraction, output_file: str = 
         print(f"Error saving steps to Markdown: {e}")
 
 # Example Usage
-if __name__ == "__main__":
+def save_and_print():
     try:
         # Read all journal entries
         with open("journal_entries_export.txt", "r", encoding="utf-8") as file:
@@ -302,3 +294,77 @@ if __name__ == "__main__":
             
     except Exception as e:
         print(f"An error occurred: {e}")
+
+def turn_to_json():
+    '''save the list of actionable steps to a json file'''
+    try:
+        # Read journal entry from file
+        with open('./filtered_ideas.md', 'r', encoding='utf-8') as file:
+            journal_entry = file.read()
+        
+        result = extract_actionable_steps(journal_entry)
+        if result:
+            # Save actionable steps to a JSON file
+            with open('actionable_steps.json', 'w') as file:
+                file.write(result.json())
+        else:
+            print("Failed to extract actionable steps.")
+            
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def save_to_db():
+    """
+    Save the list of actionable steps directly to the jobs.db database.
+    """
+    try:
+        # Read journal entry from file
+        with open('./filtered_ideas.md', 'r', encoding='utf-8') as file:
+            journal_entry = file.read()
+
+        # Extract actionable steps
+        result = extract_actionable_steps(journal_entry)
+        if result:
+            actionable_steps = result.steps  # This is a list of Step objects
+            
+            # Connect to the jobs.db database
+            conn = sqlite3.connect("jobs.db")
+            cursor = conn.cursor()
+            
+            # Insert actionable steps into the jobs table
+            for step in actionable_steps:
+                cursor.execute('''
+                    INSERT INTO jobs (
+                        category, 
+                        description, 
+                        relation_to_user, 
+                        actionable_details, 
+                        expected_outcome, 
+                        timeline, 
+                        liked
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, NULL)
+                ''', (
+                    step.category,  # Access attributes directly
+                    step.description,
+                    step.relation_to_user,
+                    step.actionable_details,
+                    step.expected_outcome,
+                    step.timeline,
+                ))
+
+            conn.commit()
+            conn.close()
+
+            print(f"Successfully saved {len(actionable_steps)} actionable steps to the database.")
+        else:
+            print("Failed to extract actionable steps.")
+            
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    # Save and print
+    #save_and_print()
+    for i in range(5):
+        save_to_db()

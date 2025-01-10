@@ -284,6 +284,76 @@ def ideas():
     # Pass the HTML content to the template
     return render_template("ideas.html", description=html_content)
 
+@app.route('/get-ideas', methods=['GET'])
+def get_ideas():
+    try:
+        with open('actionable_steps.json', 'r') as file:
+            data = json.load(file)
+        return jsonify(data["steps"])
+    except FileNotFoundError:
+        return jsonify({"error": "actionable_steps.json not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/feedback', methods=['POST'])
+def feedback():
+    data = request.json
+    print("Received data:", data)  # Debug log
+
+    # Validate the incoming data
+    job_id = data.get("id")
+    liked = data.get("liked")
+
+    if not isinstance(job_id, int) or liked not in [0, 1]:
+        error_message = f"Invalid data: job_id={job_id}, liked={liked}"
+        print(error_message)  # Debug log
+        return jsonify({"error": error_message}), 400
+
+    try:
+        # Update the database
+        conn = sqlite3.connect("jobs.db")
+        cursor = conn.cursor()
+        cursor.execute('UPDATE jobs SET liked = ? WHERE id = ?', (liked, job_id))
+        conn.commit()
+        conn.close()
+
+        return jsonify({"message": "Feedback recorded successfully"})
+    except Exception as e:
+        error_message = f"Error updating database: {e}"
+        print(error_message)  # Debug log
+        return jsonify({"error": error_message}), 500
+
+
+
+@app.route('/cards', methods=['GET'])
+def cards():
+    conn = sqlite3.connect("jobs.db")
+    cursor = conn.cursor()
+
+    # Fetch all jobs from the database
+    cursor.execute('SELECT id, category, description, relation_to_user, actionable_details, expected_outcome, timeline, liked FROM jobs')
+    jobs = cursor.fetchall()
+
+    # Format data for the template
+    jobs_data = [
+        {
+            "id": row[0],
+            "category": row[1],
+            "description": row[2],
+            "relation_to_user": row[3],
+            "actionable_details": row[4],
+            "expected_outcome": row[5],
+            "timeline": row[6],
+            "liked": row[7],
+        }
+        for row in jobs
+    ]
+
+    conn.close()
+    print("Jobs data passed to template:", jobs_data)  # Debug log
+    return render_template('cards.html', jobs=jobs_data)
+
+
 
 
 if __name__ == "__main__":

@@ -1,0 +1,61 @@
+{% extends 'layout.html' %}
+{% block title %}yapTinder{% endblock %}
+{% block content %}
+<div id="card-container" style="display: flex; flex-direction: column; align-items: center; max-width: 500px; margin: 0 auto;">
+    {% for job in jobs %}
+    <div class="card" id="job-{{ job.id }}" style="width: 100%; border: 1px solid #ccc; padding: 20px; margin: 20px; text-align: left; display: {% if loop.first %}block{% else %}none{% endif %};">
+        <h3>Idea {{ loop.index }}</h3>
+        <p><strong>Category:</strong> {{ job.category }}</p>
+        <p><strong>Description:</strong> {{ job.description }}</p>
+        <p><strong>Relation to You:</strong> {{ job.relation_to_user }}</p>
+        <p><strong>Actionable Details:</strong> {{ job.actionable_details }}</p>
+        <p><strong>Expected Outcome:</strong> {{ job.expected_outcome }}</p>
+        <p><strong>Timeline:</strong> {{ job.timeline }}</p>
+        <button onclick="like({{ job.id }})" style="margin-right: 10px;">👍 Like</button>
+        <button onclick="dislike({{ job.id }})">👎 Dislike</button>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    let currentCard = 0;
+    const cards = document.querySelectorAll('.card');
+
+    function showNextCard() {
+        if (currentCard < cards.length - 1) {
+            cards[currentCard].style.display = 'none';
+            currentCard++;
+            cards[currentCard].style.display = 'block';
+        } else {
+            alert('No more ideas!');
+        }
+    }
+
+    async function sendFeedback(jobId, liked) {
+    const feedback = { id: jobId, liked: liked }; // Use correct field names
+    console.log("Sending feedback:", feedback); // Debug log
+
+    const response = await fetch('/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feedback),
+    });
+
+    if (response.ok) {
+        showNextCard();
+    } else {
+        const errorText = await response.text(); // Fetch error details
+        console.error("Feedback failed:", errorText);
+        alert(`Failed to send feedback: ${errorText}`);
+    }
+}
+
+function like(jobId) {
+    sendFeedback(jobId, 1); // Pass 1 for "like"
+}
+
+function dislike(jobId) {
+    sendFeedback(jobId, 0); // Pass 0 for "dislike"
+}
+</script>
+{% endblock %}
