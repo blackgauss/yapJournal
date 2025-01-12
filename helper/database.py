@@ -1,27 +1,16 @@
 import sqlite3
+from contextlib import contextmanager
 
-# Database file path
-DB_FILE = "journal_entries.db"
+@contextmanager
+def get_db():
+    conn = sqlite3.connect("journal_entries.db")
+    try:
+        yield conn
+    finally:
+        conn.close()
 
-# Connect to SQLite database
-conn = sqlite3.connect(DB_FILE)
-cursor = conn.cursor()
-
-# Create the table with FTS5 for full-text search
-cursor.execute('''
-CREATE VIRTUAL TABLE IF NOT EXISTS journal_entries
-USING fts5(
-    id UNINDEXED,
-    title,
-    content,
-    tag,
-    additional_info,
-    created_at UNINDEXED,
-    updated_at UNINDEXED
-)
-''')
-
-conn.commit()
-conn.close()
-
-print("Database and table created successfully!")
+def init_tags():
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT tag FROM journal_entries")
+        return [tag[0] for tag in cursor.fetchall() if tag[0] is not None]

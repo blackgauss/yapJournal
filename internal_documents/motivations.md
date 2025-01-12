@@ -12,3 +12,7 @@ I really want to embed my journal in a vector space.
 # What data structure is my journal? What object is it in a categorical sense?
 
 # Categorical understandings of AI? -- look into it.
+
+Think of a LLM more like a transistor or neuron that has a super diverse output but you want to organize them into a bunch of more stuff.
+
+Calculate how many LLMS can glue together.

@@ -86,6 +86,6 @@ def gpt_prompt(system_prompt:str, user_prompt:str, model:str, response_format:Ba
 if __name__ == "__main__":
     # Example Usage
     response:ActionableStepsExtraction = gpt_prompt("Hi I am testing this out", "I am testing this out", "gpt-4o-mini", ActionableStepsExtraction)
-
+    response
     print(response)
     

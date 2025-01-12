@@ -133,6 +133,6 @@ def export_recent_journal_entries_to_txt_random(db_path, output_file, percentage
 # Usage
 if __name__ == "__main__":
     db_path = "journal_entries.db"  # Path to your database
-    output_file = "journal_entries_recent_random.txt"  # Desired output file
+    output_file = "./documents/LLM_inputs/journal_entries_recent_random.txt"  # Desired output file
     # export_journal_entries_to_txt(db_path, output_file)
     export_recent_journal_entries_to_txt_random(db_path, output_file, percentage=100)

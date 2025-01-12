@@ -8,7 +8,7 @@ from helper.transcribe import transcribe_audio
 from helper.keywords import extract_keywords_and_summary
 from helper.topics import hierarchical_topic_matching, topics_hierarchy
 # Custom modules/functions (update these based on your project structure)
-from helper.get_insights import extract_actionable_steps, save_steps_to_markdown
+from helper.database import init_tags
 
 app = Flask(__name__)
 
@@ -22,14 +22,25 @@ TRANSCRIPTIONS_DIR = "transcriptions"
 if not os.path.exists(TRANSCRIPTIONS_DIR):
     os.makedirs(TRANSCRIPTIONS_DIR)
 
-# Initialize tags at startup
-def init_tags():
+# Store tags in app config
+app.config['TAGS'] = init_tags()
+
+import sqlite3
+from contextlib import contextmanager
+
+@contextmanager
+def get_db():
     conn = sqlite3.connect("journal_entries.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT tag FROM journal_entries")
-    tags = [tag[0] for tag in cursor.fetchall() if tag[0] is not None]
-    conn.close()
-    return tags
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+def init_tags():
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT tag FROM journal_entries")
+        return [tag[0] for tag in cursor.fetchall() if tag[0] is not None]
 
 # Store tags in app config
 app.config['TAGS'] = init_tags()
