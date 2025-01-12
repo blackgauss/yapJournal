@@ -353,8 +353,9 @@ def cards():
     print("Jobs data passed to template:", jobs_data)  # Debug log
     return render_template('cards.html', jobs=jobs_data)
 
-
-
+@app.route("/demo")
+def demo():
+    return render_template("demo.html")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, ssl_context=("ssl-certificates/cert.pem", "ssl-certificates/key.pem"), debug=True)

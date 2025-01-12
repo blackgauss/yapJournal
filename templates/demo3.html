@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAP Journal Development Summary</title>
+<style>
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  color: #000000;
+  background-color: #FAF6F0;
+  margin: 20px;
+}
+
+h1, h2, h3 {
+  color: #000000;
+  background-color: #F4EAE0;
+  padding: 10px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+}
+
+h1 {
+  text-align: center;
+}
+
+.journal-entry {
+  background-color: #F4EAE0;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+}
+
+.journal-entry h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.highlight {
+  background-color: #F4DFC8;
+  padding: 2px 5px;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+}
+
+.highlight:hover {
+  background-color: #E8D6C0; /* Slightly lighter beige on hover */
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.timeline-item {
+  width: 80%;
+  background-color: white;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle box shadow */
+  position: relative;
+}
+
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -15px;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  background-color: #000000;
+  border-radius: 50%;
+}
+
+
+@media (max-width: 768px) {
+  .timeline-item {
+    width: 95%;
+  }
+}
+</style>
+</head>
+<body>
+
+<h1>YAP Journal Development: A Three-Day Summary</h1>
+
+<div class="timeline">
+
+  <div class="timeline-item">
+    <h2>January 7th, 2025: Inception and Initial Development</h2>
+    <p>The project began with a simple goal: to create a tool for recording and analyzing my thoughts.  Early entries reveal the initial excitement and challenges.  "Hello, I finally got it working on my iPhone... Now I'm trying out doing the recording from my iPhone and uploading everything." (2025-01-07 08:24:22)</p>
+    <p>The focus was on capturing audio, transcribing it to text, and storing the resulting journal entries.  Data management was immediately identified as a key challenge:  "another issue is that every entry is getting saved as an individual JSON folder... So I need a way to store..." (2025-01-07 11:11:45)</p>
+    <p>Key technical aspects explored included OpenSSL for microphone access and the use of ChatGPT for code generation. The power of searchable text was highlighted:  "the wonderful thing about text is you can search it. You can put it into GPT." (2025-01-07 09:13:57)</p>
+    <p class="highlight">Early insights centered on the unique value of personalized data and the potential for future analysis: "the real secret sauce... will be able to do a bunch of analysis on all my entries."</p>
+  </div>
+
+
+  <div class="timeline-item">
+    <h2>January 8th, 2025: Database Migration and Feature Expansion</h2>
+    <p>The day began with a focus on improving data storage.  "Next on the agenda is to kind of deal with the data storage a little bit better... I want to be able to upload or tag them at least in some kind of smart way." (2025-01-07 10:25:12)</p>
+    <p>A significant milestone was migrating from individual JSON files to an SQLite3 database, facilitated by ChatGPT suggestions:  "So I just uploaded to the last app journal to GPT. It's telling me stuff like use SQLite for local storage..." (2025-01-07 10:30:15)</p>
+    <p>New features included a tagging system and keyword extraction, though challenges arose:  "Alright, so there was an issue with the new tagging system..." (2025-01-07 11:14:46)  and "the tag system is kind of funky, but you know it does the job." (2025-01-07 14:37:47.836008)</p>
+    <p>The day concluded with a sense of accomplishment, despite ongoing challenges: "I'd call this a successful first day."</p>
+    <p class="highlight">A key insight was the value of building a tool tailored to my specific needs, even if it meant a less polished outcome initially: "this does that already. So..." (2025-01-07 13:22:50)</p>
+  </div>
+
+  <div class="timeline-item">
+    <h2>January 9th, 2025: Bug Fixing, Refinement, and Future Directions</h2>
+    <p>The day focused on refining the tagging system and fixing bugs independently. "Wow, this is great. I solved the tagging problem without using the chat GPT." (2025-01-09 07:37:38.066191)</p>
+    <p>This involved debugging and a deeper understanding of the codebase: "I learned a lot... the bug told me how the program worked. And also I learned a little bit about why fixing your own bugs makes your code better." (2025-01-09 08:29:36.713045)</p>
+    <p>Further features were added, including topic extraction and improved UI/UX.  "So I did a bunch of fucking around, everything's fucked up now." (2025-01-08 06:14:19.604215)  This entry highlights the iterative nature of development.</p>
+    <p>The focus shifted towards more sophisticated data analysis and the creation of a more intelligent search functionality: "the next order of business is I've got all of this text and I don't want to go through it myself...what ideas are most relevant to this idea." (2025-01-08 04:39:43.884408)</p>
+    <p class="highlight">A crucial realization emerged regarding the importance of clear prompts for effective interaction with LLMs: "the quality of the analysis...depends on how well I can specify my prompt..." (2025-01-10 08:14:24.449454)</p>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -264,7 +264,7 @@ def save_steps_to_markdown(tasks: ActionableStepsExtraction, output_file: str = 
 def save_and_print():
     try:
         # Read all journal entries
-        with open("journal_entries_export.txt", "r", encoding="utf-8") as file:
+        with open("journal_entries_recent.txt", "r", encoding="utf-8") as file:
             journal_content = file.read()
 
         # Filter ideas
@@ -365,6 +365,6 @@ def save_to_db():
 
 if __name__ == "__main__":
     # Save and print
-    #save_and_print()
-    for i in range(5):
-        save_to_db()
+    save_and_print()
+    #for i in range(5):
+    #    save_to_db()
