@@ -114,7 +114,6 @@ def transcribe():
         keywords = ', '.join(summary_data['keywords'])  # Convert keywords list to a comma-separated string
 
         topics = hierarchical_topic_matching(transcription_text, topics_hierarchy, top_broad_n=1, top_sub_n=3)
-        print(list(topics.keys())[0])
         subtopics_array = topics[list(topics.keys())[0]]["subtopics"]
         subtopics = [subtopic[0] for subtopic in subtopics_array]
         subtopics_key_string = ', '.join(subtopics)
@@ -148,7 +147,6 @@ def transcribe():
 @app.route("/entries", methods=["GET"])
 def entries():
     listOfTags = app.config['TAGS']
-    print(listOfTags)
     try:
         tag1 = listOfTags[1]
         # Get query parameters for filtering and searching
